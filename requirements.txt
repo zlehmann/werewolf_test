@@ -1,0 +1,3 @@
+fastavro
+flask
+flask-dotenv
