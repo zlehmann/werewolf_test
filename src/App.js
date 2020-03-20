@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import logo from './logo.svg';
 import './App.css';
+import store from './store/index'
+import getTime from './actions/gameActions'
 
 var avro = require('avro-js');
 
@@ -28,10 +30,16 @@ function App() {
         >
           Learn React
         </a>
-        <p>The current time is {currentTime}.</p>
+        <p>The time at launch was {currentTime}.</p>
+        <button onClick={dispatchBtnAction}>Test</button>
+        <p>Current time is: {store.getState().game.time.time}</p>
       </header>
     </div>
   );
+}
+
+function dispatchBtnAction(e) {
+  store.dispatch(getTime())
 }
 
 export default App;
