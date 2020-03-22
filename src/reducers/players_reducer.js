@@ -1,6 +1,7 @@
 export default function playersReducer(
   state = {
     loading: false,
+    inGame: false,
     name: '',
     color: 0,
     vote: '',
@@ -13,6 +14,12 @@ action) {
         ...state,
         loading: true
     }
+
+    case 'SET_PLAYER_NAME':
+      return {
+        ...state,
+        name: action.name
+      }
 
     default:
       return state

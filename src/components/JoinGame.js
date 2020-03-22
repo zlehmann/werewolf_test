@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import store from '../store/index'
 import { checkPlayerName } from '../actions/gameActions'
+import { setPlayerName } from '../actions/playerActions'
 
 const mapStateToProps = state => {
   return {
@@ -14,6 +15,10 @@ const mapDispatchToProps = dispatch => {
   return {
     checkPlayerName: (name) => {
       dispatch(checkPlayerName(name))
+    },
+
+    setPlayerName: (name) => {
+      dispatch(setPlayerName(name))
     }
   }
 }
@@ -46,7 +51,7 @@ class JoinGame extends Component {
 
     if (checkName === true) {
       this.props.checkPlayerName(this.state.name)
-      //set player name here
+      this.props.setPlayerName(this.state.name)
     } else {
       this.setState({
         name: 'New Player'

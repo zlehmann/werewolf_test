@@ -1,7 +1,6 @@
 import store from '../store/index'
 
 export default function getTime() {
-  console.log('action getTime fired')
   return (dispatch) => {
     return fetch('/time')
     .then(res => res.json())
