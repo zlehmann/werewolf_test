@@ -6,6 +6,7 @@ let initialState = {
   game: {
     loading: false,
     name: '',
+    players: [],
     round: 0,
     phase: '',
     votes: [],
@@ -14,6 +15,7 @@ let initialState = {
   },
   player: {
     loading: false,
+    inGame: false,
     name: '',
     color: 0,
     vote: '',

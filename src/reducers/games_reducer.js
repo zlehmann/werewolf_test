@@ -2,6 +2,7 @@ export default function gamesReducer(
   state = {
     loading: false,
     name: '',
+    players: [],
     round: 0,
     phase: '',
     votes: [],
@@ -17,10 +18,20 @@ action) {
     }
 
     case 'GET_TIME':
-      console.log('reducer handling get time request', action.time)
       return {
         ...state,
         time: action.time
+      }
+
+    case 'APPROVE_PLAYER_NAME':
+      return Object.assign({}, state, {
+        players: action.newName
+      })
+
+    case 'DISAPPROVE_PLAYER_NAME':
+      return {
+        ...state,
+
       }
 
     default:
