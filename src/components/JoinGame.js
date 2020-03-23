@@ -45,7 +45,7 @@ class JoinGame extends Component {
     let checkName = true
     const players = store.getState().game.players
     players.forEach((player) => {
-      if (this.state.name === player) {
+      if (this.state.name === player.name) {
         checkName = false
       }
     })
@@ -56,7 +56,7 @@ class JoinGame extends Component {
     if (checkName === true) {
       // create new player object
       this.props.setPlayerName(this.state.name, playerColor)
-      this.props.addPlayer(this.state.name)
+      this.props.addPlayer(store.getState().player)
     } else {
       this.setState({
         name: 'New Player'
