@@ -7,6 +7,8 @@ let initialState = {
     loading: false,
     name: '',
     players: [],
+    colors: ['black', 'blue', 'brown', 'emerald', 'green', 'grey',
+              'pink', 'purple', 'red', 'orange', 'teal'],
     round: 0,
     phase: '',
     votes: [],
@@ -17,7 +19,7 @@ let initialState = {
     loading: false,
     inGame: false,
     name: '',
-    color: 0,
+    color: '',
     vote: '',
     points: 0
   }

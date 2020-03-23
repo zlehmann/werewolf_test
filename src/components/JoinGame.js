@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
 import store from '../store/index'
-import { checkPlayerName } from '../actions/gameActions'
+import { addPlayer } from '../actions/gameActions'
 import { setPlayerName } from '../actions/playerActions'
 
 const mapStateToProps = state => {
@@ -13,12 +13,12 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
-    checkPlayerName: (name) => {
-      dispatch(checkPlayerName(name))
+    addPlayer: (name) => {
+      dispatch(addPlayer(name))
     },
 
-    setPlayerName: (name) => {
-      dispatch(setPlayerName(name))
+    setPlayerName: (name, color) => {
+      dispatch(setPlayerName(name, color))
     }
   }
 }
@@ -41,6 +41,7 @@ class JoinGame extends Component {
 
   handleSubmit(e) {
     e.preventDefault()
+    // check if player name is taken already
     let checkName = true
     const players = store.getState().game.players
     players.forEach((player) => {
@@ -49,9 +50,13 @@ class JoinGame extends Component {
       }
     })
 
+    // assign the next player color to new player
+    const playerColor = store.getState().game.colors[store.getState().game.players.length]
+
     if (checkName === true) {
-      this.props.checkPlayerName(this.state.name)
-      this.props.setPlayerName(this.state.name)
+      // create new player object
+      this.props.setPlayerName(this.state.name, playerColor)
+      this.props.addPlayer(this.state.name)
     } else {
       this.setState({
         name: 'New Player'

@@ -14,7 +14,7 @@ export default function getTime() {
     }
   }
 
-export function checkPlayerName(newName) {
+export function addPlayer(newName) {
   const players = store.getState().game.players
   players.push(newName)
 

@@ -16,9 +16,11 @@ action) {
     }
 
     case 'SET_PLAYER_NAME':
+    console.log(action)
       return {
         ...state,
-        name: action.name
+        name: action.name,
+        color: action.color
       }
 
     default:
