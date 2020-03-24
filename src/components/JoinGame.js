@@ -41,29 +41,11 @@ class JoinGame extends Component {
 
   handleSubmit(e) {
     e.preventDefault()
-    // check if player name is taken already
-    let checkName = true
-    const players = store.getState().game.players
-    players.forEach((player) => {
-      if (this.state.name === player.name) {
-        checkName = false
-      }
-    })
-
-    // assign the next player color to new player
-    const playerColor = store.getState().game.colors[store.getState().game.players.length]
-
-    if (checkName === true) {
-      // create new player object
-      this.props.setPlayerName(this.state.name, playerColor)
-      this.props.addPlayer(store.getState().player)
-    } else {
-      this.setState({
-        name: 'New Player'
-      })
-      alert('This name is already taken, choose another name.')
-    }
-
+    console.log(this.state.name)
+    fetch('/game/join/' + this.state.name)
+      .then(res => res.json())
+      .then(data => {console.log(data)})
+    // need game action here to call get_game
   }
 
   render() {

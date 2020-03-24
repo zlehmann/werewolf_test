@@ -3,11 +3,11 @@ export default function gamesReducer(
     loading: false,
     name: '',
     players: [],
+    state: '',
+    colors: ['black', 'blue', 'brown', 'emerald', 'green', 'grey',
+              'pink', 'purple', 'red', 'orange', 'teal'],
     round: 0,
-    phase: '',
-    votes: [],
-    goldCards: [],
-    time: 0
+    votes: []
   },
 action) {
   switch(action.type) {

@@ -21,12 +21,26 @@ class PlayerState(Enum):
 
 
 class Color(Enum):
+    BLACK = 1
+    BLUE = 2
+    BROWN = 3
+    EMERALD = 4
+    GREEN = 5
+    GREY = 6
+    PINK = 7
+    PURPLE = 8
+    RED = 9
+    ORANGE = 10
+    TEAL = 11
+    YELLOW = 12
     pass
 
 
 class Player:
-    def __init(self):
+    def __init__(self):
         self.is_alive = True
+        self.name = ''
+        self.color = ''
 
 
 class Screen:
@@ -43,6 +57,8 @@ class Game:
         self.state = GameState.WAITING_FOR_PLAYERS
         self.min_players = 6
         self.max_players = 12
+        self.round = 0
+        self.votes = []
 
 
 app = Flask(__name__)
@@ -61,12 +77,15 @@ def get_game():
 
 @app.route('/game/join/<player>')
 def join_game(player):
-    if player not in game.players:
-        game.players.append(player)
+    new_player = Player()
+    new_player.name = player
+    new_player.color = Color(len(game.players) + 1).name
+    if new_player not in game.players:
+        game.players.append(new_player)
         # TODO: Create Session
-        return "SUCCESS: {} has JOINED".format(player)
+        return {'player': {'name': new_player.name, 'color': new_player.color}}
     else:
-        return "FAILURE: {} has already JOINED".format(player), 400
+        return {'player_creation': 'FAILURE'}, 400
 
 
 @app.route('/game/start')
@@ -78,7 +97,7 @@ def start_game():
 
 @app.route('/game/view')
 def view_game():
-
+    pass
 
 @app.route('/vote/<voter>/<voted_for>')
 def vote(voter, voted_for):

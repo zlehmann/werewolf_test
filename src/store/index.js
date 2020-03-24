@@ -7,16 +7,13 @@ let initialState = {
     loading: false,
     name: '',
     players: [],
-    colors: ['black', 'blue', 'brown', 'emerald', 'green', 'grey',
-              'pink', 'purple', 'red', 'orange', 'teal'],
+    state: '',
     round: 0,
-    phase: '',
-    votes: [],
-    goldCards: [],
-    time: 999
+    votes: []
   },
   player: {
     loading: false,
+    isAlive: true,
     inGame: false,
     name: '',
     color: '',

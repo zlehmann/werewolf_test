@@ -1,9 +1,10 @@
 export default function playersReducer(
   state = {
     loading: false,
-    inGame: false,
+    is_alive: true,
+    in_game: true,
     name: '',
-    color: 0,
+    color: '',
     vote: '',
     points: 0
   },
@@ -16,7 +17,6 @@ action) {
     }
 
     case 'SET_PLAYER_NAME':
-    console.log(action)
       return {
         ...state,
         name: action.name,

@@ -21,8 +21,6 @@ function App() {
       <Game />
 
       <p>The time at launch was {currentTime}.</p>
-      <button onClick={dispatchBtnAction}>Test</button>
-      <p>Current time is: {store.getState().game.time.time}</p>
     </div>
   );
 }
