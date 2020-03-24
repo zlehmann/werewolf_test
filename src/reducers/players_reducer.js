@@ -20,7 +20,8 @@ action) {
       return {
         ...state,
         name: action.name,
-        color: action.color
+        color: action.color,
+        inGame: true
       }
 
     default:
