@@ -37,9 +37,9 @@ class Color(Enum):
 
 
 class Player:
-    def __init__(self):
+    def __init__(self, name):
         self.is_alive = True
-        self.name = ''
+        self.name = name
         self.color = ''
 
 
@@ -77,15 +77,26 @@ def get_game():
 
 @app.route('/game/join/<player>')
 def join_game(player):
-    new_player = Player()
-    new_player.name = player
+    new_player = Player(player)
     new_player.color = Color(len(game.players) + 1).name
-    if new_player not in game.players:
+
+    valid_player = True
+    error = ''
+    for existing_player in game.players:
+        if existing_player.name == new_player.name:
+            valid_player = False
+            error = 'Player name already exists'
+
+        if existing_player.color == new_player.color:
+            valid_player = False
+            error = 'Player with that color already exists'
+
+    if valid_player == True:
         game.players.append(new_player)
         # TODO: Create Session
         return {'player': {'name': new_player.name, 'color': new_player.color}}
     else:
-        return {'player_creation': 'FAILURE'}, 400
+        return {'error': error}, 400
 
 
 @app.route('/game/start')
