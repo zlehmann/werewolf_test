@@ -1,6 +1,8 @@
 import time
 from flask import Flask
 from enum import Enum
+from json import JSONEncoder
+import json
 
 
 class GameState(Enum):
@@ -41,7 +43,10 @@ class Player:
         self.is_alive = True
         self.name = name
         self.color = ''
-
+    def reprJSON(self):
+        return dict(is_alive=self.is_alive,
+                    name=self.name,
+                    color=self.color)
 
 class Screen:
     pass
@@ -54,12 +59,25 @@ class Round:
 class Game:
     def __init__(self):
         self.players = []
-        self.state = GameState.WAITING_FOR_PLAYERS
+        self.state = GameState(1).name
         self.min_players = 6
         self.max_players = 12
         self.round = 0
         self.votes = []
+    def reprJSON(self):
+        return dict(players=self.players,
+                    state=self.state,
+                    min_players=self.min_players,
+                    max_players=self.max_players,
+                    round=self.round,
+                    votes=self.votes)
 
+class ComplexEncoder(JSONEncoder):
+    def default(self, obj):
+        if hasattr(obj, 'reprJSON'):
+            return obj.reprJSON()
+        else:
+            return json.JSONEncoder.default(self, obj)
 
 app = Flask(__name__)
 game = Game()
@@ -72,14 +90,14 @@ def get_current_time():
 
 @app.route('/game')
 def get_game():
-    return {'players': game.players}
-
+    return ComplexEncoder().encode(game)
 
 @app.route('/game/join/<player>')
 def join_game(player):
     new_player = Player(player)
     new_player.color = Color(len(game.players) + 1).name
 
+    # validate new player joining
     valid_player = True
     error = ''
     for existing_player in game.players:
@@ -91,10 +109,14 @@ def join_game(player):
             valid_player = False
             error = 'Player with that color already exists'
 
+        if game.max_players < len(game.players):
+            valid_player = False
+            error = 'Max number of players reached'
+
     if valid_player == True:
         game.players.append(new_player)
         # TODO: Create Session
-        return {'player': {'name': new_player.name, 'color': new_player.color}}
+        return ComplexEncoder().encode(new_player)
     else:
         return {'error': error}, 400
 
