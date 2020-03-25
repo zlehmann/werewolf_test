@@ -20,7 +20,7 @@ export function addPlayer(newName) {
 
   return (dispatch) => {
     dispatch({
-      type: 'APPROVE_PLAYER_NAME',
+      type: 'ADD_PLAYER',
       newName: players
     })
   }

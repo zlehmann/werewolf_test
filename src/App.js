@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
 import './App.css';
 import store from './store/index'
 import getTime from './actions/gameActions'
-import Game from './containers/Game'
+import Room from './containers/Room'
 
 var avro = require('avro-js');
 
@@ -18,7 +17,7 @@ function App() {
 
   return (
     <div className="App">
-      <Game />
+      <Room />
 
       <p>The time at launch was {currentTime}.</p>
     </div>

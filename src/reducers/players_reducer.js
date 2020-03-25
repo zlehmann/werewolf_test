@@ -16,11 +16,12 @@ action) {
         loading: true
     }
 
-    case 'SET_PLAYER_NAME':
+    case 'CREATE_PLAYER':
       return {
         ...state,
         name: action.name,
         color: action.color,
+        isAlive: true,
         inGame: true
       }
 

@@ -1,9 +1,7 @@
-import store from '../store/index'
-
-export function setPlayerName(name, color) {
+export function createPlayer(name, color) {
   return (dispatch) => {
     dispatch({
-      type: 'SET_PLAYER_NAME',
+      type: 'CREATE_PLAYER',
       name: name,
       color: color
     })

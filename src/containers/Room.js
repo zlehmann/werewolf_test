@@ -2,7 +2,6 @@ import React, { Component } from 'react'
 import store from '../store/index'
 import { connect } from 'react-redux'
 import JoinGame from '../components/JoinGame'
-import { getTime, checkPlayerName } from '../actions/gameActions'
 
 const mapStateToProps = state => {
   return {
@@ -13,7 +12,7 @@ const mapStateToProps = state => {
 
 
 
-class Game extends Component {
+class Room extends Component {
   render() {
     let page = null
     if(store.getState().player.inGame === false) {
@@ -33,4 +32,4 @@ class Game extends Component {
 
 
 
-export default connect(mapStateToProps)(Game)
+export default connect(mapStateToProps)(Room)
