@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import store from './store/index'
-import getTime from './actions/gameActions'
+import { getTime } from './actions/gameActions'
 import Room from './containers/Room'
 
 var avro = require('avro-js');
@@ -22,10 +22,6 @@ function App() {
       <p>The time at launch was {currentTime}.</p>
     </div>
   );
-}
-
-function dispatchBtnAction(e) {
-  store.dispatch(getTime())
 }
 
 export default App;

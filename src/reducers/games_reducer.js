@@ -1,14 +1,5 @@
 export default function gamesReducer(
-  state = {
-    loading: false,
-    name: '',
-    players: [],
-    state: '',
-    colors: ['black', 'blue', 'brown', 'emerald', 'green', 'grey',
-              'pink', 'purple', 'red', 'orange', 'teal'],
-    round: 0,
-    votes: []
-  },
+  state = { },
 action) {
   switch(action.type) {
     case 'LOADING_GAME':
@@ -23,15 +14,10 @@ action) {
         time: action.time
       }
 
-    case 'APPROVE_PLAYER_NAME':
-      return Object.assign({}, state, {
-        players: action.newName
-      })
-
-    case 'DISAPPROVE_PLAYER_NAME':
+    case 'GET_GAME':
       return {
         ...state,
-
+        game: action.game
       }
 
     default:

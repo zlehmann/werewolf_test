@@ -3,14 +3,7 @@ import rootReducer from '../reducers/index'
 import thunk from 'redux-thunk';
 
 let initialState = {
-  game: {
-    loading: false,
-    name: '',
-    players: [],
-    state: '',
-    round: 0,
-    votes: []
-  },
+  game: { },
   player: {
     loading: false,
     isAlive: true,

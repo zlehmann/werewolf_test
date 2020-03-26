@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { connect } from 'react-redux'
-import { addPlayer } from '../actions/gameActions'
+import { getGame } from '../actions/gameActions'
 import { createPlayer } from '../actions/playerActions'
 
 const mapStateToProps = state => {
@@ -12,8 +12,8 @@ const mapStateToProps = state => {
 
 const mapDispatchToProps = dispatch => {
   return {
-    addPlayer: (name) => {
-      dispatch(addPlayer(name))
+    getGame: () => {
+      dispatch(getGame())
     },
 
     createPlayer: (name, color) => {
@@ -51,12 +51,10 @@ class JoinGame extends Component {
             error: data.error
           })
         } else {
-          this.props.addPlayer(data)
           this.props.createPlayer(data.name, data.color)
+          this.props.getGame()
         }
       })
-    // need game action here to call get_game
-    console.log(this.state)
   }
 
 

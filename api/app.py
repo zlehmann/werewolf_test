@@ -58,6 +58,7 @@ class Round:
 
 class Game:
     def __init__(self):
+        self.name = 'New Game'
         self.players = []
         self.state = GameState(1).name
         self.min_players = 6
@@ -65,7 +66,8 @@ class Game:
         self.round = 0
         self.votes = []
     def reprJSON(self):
-        return dict(players=self.players,
+        return dict(name=self.name,
+                    players=self.players,
                     state=self.state,
                     min_players=self.min_players,
                     max_players=self.max_players,
