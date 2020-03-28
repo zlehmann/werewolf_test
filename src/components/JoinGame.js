@@ -41,7 +41,6 @@ class JoinGame extends Component {
 
   handleSubmit(e) {
     e.preventDefault()
-    console.log(this.state.name)
     fetch('/game/join/' + this.state.name)
       .then(res => res.json())
       .then(data => {
@@ -51,7 +50,7 @@ class JoinGame extends Component {
             error: data.error
           })
         } else {
-          this.props.createPlayer(data.name, data.color)
+          this.props.createPlayer(data)
           this.props.getGame()
         }
       })

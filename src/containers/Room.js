@@ -27,7 +27,7 @@ class Room extends Component {
   }
 
   render() {
-    if(store.getState().player.inGame === false) {
+    if(store.getState().player.in_game === false) {
       return (
         <div className='game'>
           <JoinGame />

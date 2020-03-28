@@ -1,9 +1,22 @@
-export function createPlayer(name, color) {
+export function createPlayer(player) {
   return (dispatch) => {
     dispatch({
       type: 'CREATE_PLAYER',
-      name: name,
-      color: color
+      payload: player
     })
+  }
+}
+
+export function getPlayer(id) {
+  return (dispatch) => {
+    return fetch('/players/' + id)
+      .then(res => res.json())
+      .then(resJSON =>
+        {
+          dispatch({
+            type: 'GET_PLAYER',
+            payload: resJSON
+          })
+        })
   }
 }

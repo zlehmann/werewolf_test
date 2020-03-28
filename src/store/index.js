@@ -5,13 +5,11 @@ import thunk from 'redux-thunk';
 let initialState = {
   game: { },
   player: {
-    loading: false,
-    isAlive: true,
-    inGame: false,
+    id: '',
+    is_alive: true,
+    in_game: false,
     name: '',
-    color: '',
-    vote: '',
-    points: 0
+    color: ''
   }
 }
 

@@ -40,11 +40,15 @@ class Color(Enum):
 
 class Player:
     def __init__(self, name):
+        self.id = ''
         self.is_alive = True
+        self.in_game = False
         self.name = name
         self.color = ''
     def reprJSON(self):
-        return dict(is_alive=self.is_alive,
+        return dict(id=self.id,
+                    is_alive=self.is_alive,
+                    in_game=self.in_game,
                     name=self.name,
                     color=self.color)
 
@@ -97,7 +101,8 @@ def get_game():
 @app.route('/game/join/<player>')
 def join_game(player):
     new_player = Player(player)
-    new_player.color = Color(len(game.players) + 1).name
+    new_player.id = len(game.players) + 1
+    new_player.in_game = True
 
     # validate new player joining
     valid_player = True
@@ -107,21 +112,25 @@ def join_game(player):
             valid_player = False
             error = 'Player name already exists'
 
-        if existing_player.color == new_player.color:
-            valid_player = False
-            error = 'Player with that color already exists'
-
-        if game.max_players < len(game.players):
-            valid_player = False
-            error = 'Max number of players reached'
+    if new_player.id > game.max_players:
+        valid_player = False
+        error = 'Max number of players reached'
 
     if valid_player == True:
+        new_player.color = Color(len(game.players) + 1).name
         game.players.append(new_player)
         # TODO: Create Session
         return ComplexEncoder().encode(new_player)
     else:
         return {'error': error}, 400
 
+@app.route('/players/<id>')
+def get_player(id):
+    for player in game.players:
+        if player.id == int(id):
+            return ComplexEncoder().encode(player)
+
+    return {'error': 'player not found'}
 
 @app.route('/game/start')
 def start_game():
