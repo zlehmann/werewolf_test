@@ -1,12 +1,10 @@
 export default function playersReducer(
   state = {
-    loading: false,
+    id: '',
     is_alive: true,
-    in_game: true,
+    in_game: false,
     name: '',
-    color: '',
-    vote: '',
-    points: 0
+    color: ''
   },
 action) {
   switch(action.type) {
@@ -16,12 +14,14 @@ action) {
         loading: true
     }
 
-    case 'SET_PLAYER_NAME':
+    case 'CREATE_PLAYER':
       return {
-        ...state,
-        name: action.name,
-        color: action.color,
-        inGame: true
+        player: action.payload
+      }
+
+    case 'GET_PLAYER':
+      return {
+        player: action.payload
       }
 
     default:

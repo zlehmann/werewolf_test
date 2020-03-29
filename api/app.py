@@ -1,6 +1,8 @@
 import time
 from flask import Flask
 from enum import Enum
+from json import JSONEncoder
+import json
 
 
 class GameState(Enum):
@@ -38,10 +40,17 @@ class Color(Enum):
 
 class Player:
     def __init__(self, name):
+        self.id = ''
         self.is_alive = True
+        self.in_game = False
         self.name = name
         self.color = ''
-
+    def reprJSON(self):
+        return dict(id=self.id,
+                    is_alive=self.is_alive,
+                    in_game=self.in_game,
+                    name=self.name,
+                    color=self.color)
 
 class Screen:
     pass
@@ -53,13 +62,28 @@ class Round:
 
 class Game:
     def __init__(self):
+        self.name = 'New Game'
         self.players = []
-        self.state = GameState.WAITING_FOR_PLAYERS
+        self.state = GameState(1).name
         self.min_players = 6
         self.max_players = 12
         self.round = 0
         self.votes = []
+    def reprJSON(self):
+        return dict(name=self.name,
+                    players=self.players,
+                    state=self.state,
+                    min_players=self.min_players,
+                    max_players=self.max_players,
+                    round=self.round,
+                    votes=self.votes)
 
+class ComplexEncoder(JSONEncoder):
+    def default(self, obj):
+        if hasattr(obj, 'reprJSON'):
+            return obj.reprJSON()
+        else:
+            return json.JSONEncoder.default(self, obj)
 
 app = Flask(__name__)
 game = Game()
@@ -72,14 +96,15 @@ def get_current_time():
 
 @app.route('/game')
 def get_game():
-    return {'players': game.players}
-
+    return ComplexEncoder().encode(game)
 
 @app.route('/game/join/<player>')
 def join_game(player):
     new_player = Player(player)
-    new_player.color = Color(len(game.players) + 1).name
+    new_player.id = len(game.players) + 1
+    new_player.in_game = True
 
+    # validate new player joining
     valid_player = True
     error = ''
     for existing_player in game.players:
@@ -87,17 +112,25 @@ def join_game(player):
             valid_player = False
             error = 'Player name already exists'
 
-        if existing_player.color == new_player.color:
-            valid_player = False
-            error = 'Player with that color already exists'
+    if new_player.id > game.max_players:
+        valid_player = False
+        error = 'Max number of players reached'
 
     if valid_player == True:
+        new_player.color = Color(len(game.players) + 1).name
         game.players.append(new_player)
         # TODO: Create Session
-        return {'player': {'name': new_player.name, 'color': new_player.color}}
+        return ComplexEncoder().encode(new_player)
     else:
         return {'error': error}, 400
 
+@app.route('/players/<id>')
+def get_player(id):
+    for player in game.players:
+        if player.id == int(id):
+            return ComplexEncoder().encode(player)
+
+    return {'error': 'player not found'}
 
 @app.route('/game/start')
 def start_game():

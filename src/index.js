@@ -16,7 +16,6 @@ const render = function () {
   }
 
   store.subscribe(render)
-  store.subscribe(() => console.log(store.getState()))
   render()
 
 // If you want your app to work offline and load faster, you can change
