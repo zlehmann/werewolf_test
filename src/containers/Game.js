@@ -30,7 +30,7 @@ class Game extends Component {
   }
 
   render() {
-    const players = this.props.game.game.players
+    const players = Object.values(this.props.game.game.players)
     const listPlayers = players.map((player) =>
       <li key={player.id}>{player.name}, {player.color}</li>
     )
