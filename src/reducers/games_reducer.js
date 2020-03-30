@@ -20,6 +20,12 @@ action) {
         game: action.game
       }
 
+    case 'CAST_VOTE':
+      return {
+        ...state,
+        vote: action.payload
+      }
+
     default:
       return state
   }

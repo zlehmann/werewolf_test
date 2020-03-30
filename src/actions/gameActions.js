@@ -13,7 +13,6 @@ export function getTime() {
   }
 
 export const getGame = () => {
-  console.log('get game')
   return (dispatch) => {
     return fetch('/game')
       .then(res => res.json())
@@ -24,5 +23,18 @@ export const getGame = () => {
             game: resJSON
           })
         })
+  }
+}
+
+export function castVote(voter_id, voted_for_id) {
+  return (dispatch) => {
+    return fetch('/vote/' + voter_id + '/' + voted_for_id)
+      .then(res => res.json())
+      .then(resJSON => {
+        dispatch({
+          type: 'CAST_VOTE',
+          payload: resJSON
+        })
+      })
   }
 }
