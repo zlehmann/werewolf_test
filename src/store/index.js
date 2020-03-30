@@ -9,7 +9,8 @@ let initialState = {
     is_alive: true,
     in_game: false,
     name: '',
-    color: ''
+    color: '',
+    vote: ''
   }
 }
 

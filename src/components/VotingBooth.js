@@ -25,16 +25,34 @@ const mapDispatchToProps = dispatch => {
 class VotingBooth extends Component {
   constructor(props) {
     super(props)
+    this.state = ({
+      vote: '',
+      error: ''
+    })
     this.handleVote = this.handleVote.bind(this)
   }
 
   handleVote(voter_id, voted_for_id) {
     this.props.castVote(voter_id, voted_for_id)
+    fetch('/players/' + voted_for_id)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          this.setState({
+            vote: 'Invalid',
+            error: data.error
+          })
+        } else {
+          this.setState({
+            vote: data.name
+          })
+        }
+      })
   }
 
   render() {
     const players = Object.values(this.props.game.game.players)
-    const livingPlayers = players.map((player) => {
+    const eligiblePlayers = players.map((player) => {
       if (player.is_alive === true) {
         return (
           <div key={player.id} className='vote-block' onClick={
@@ -45,12 +63,21 @@ class VotingBooth extends Component {
       }
     })
 
-    return (
-      <div>
-        <h3>Vote for a player:</h3>
-        {livingPlayers}
-      </div>
-    )
+    if (this.state.vote === '') {
+      return (
+        <div>
+          <h3>Vote for a player:</h3>
+          {eligiblePlayers}
+        </div>
+      )
+    } else {
+      return (
+        <div>
+          <h3>You voted for:</h3>
+          {this.state.vote}
+        </div>
+      )
+    }
   }
 }
 
