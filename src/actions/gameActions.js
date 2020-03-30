@@ -12,7 +12,8 @@ export function getTime() {
     }
   }
 
-export function getGame() {
+export const getGame = () => {
+  console.log('get game')
   return (dispatch) => {
     return fetch('/game')
       .then(res => res.json())

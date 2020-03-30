@@ -3,6 +3,8 @@ import store from '../store/index'
 import { connect } from 'react-redux'
 import { getGame } from '../actions/gameActions'
 import { getPlayer } from '../actions/playerActions'
+import { withPolling } from '../withPolling'
+import VotingBooth from '../components/VotingBooth'
 
 const mapStateToProps = state => {
   return {
@@ -36,6 +38,8 @@ class Game extends Component {
     )
     const player = this.props.player.player
 
+    const voting = ((store.getState().game.game.state === 'VOTING') ? <VotingBooth /> : null)
+
     return(
       <div>
         <div>
@@ -45,9 +49,11 @@ class Game extends Component {
         </div>
 
         <div>
-          <h2>You are player #{player.id}</h2>
+          <h2>You are player #{player.id + 1}</h2>
           <p>other stats can go here</p>
         </div>
+
+        {voting}
       </div>
     )
   }
@@ -55,4 +61,4 @@ class Game extends Component {
 
 
 
-export default connect(mapStateToProps, mapDispatchToProps)(Game)
+export default withPolling(getGame)(connect(mapStateToProps, mapDispatchToProps)(Game))
