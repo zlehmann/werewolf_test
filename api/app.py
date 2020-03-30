@@ -136,7 +136,7 @@ def get_player(id):
 def start_game():
     if game.max_players >= len(game.players) >= game.min_players:
         game.state = GameState.VOTING
-        return "GAME STARTED"
+        return ComplexEncoder().encode(game)
 
 
 @app.route('/game/view')
