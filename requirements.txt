@@ -1,3 +1,4 @@
 fastavro
 flask
 flask-dotenv
+pytest

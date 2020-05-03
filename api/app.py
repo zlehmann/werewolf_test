@@ -2,8 +2,10 @@ import time
 from flask import Flask
 from enum import Enum
 from json import JSONEncoder
+from typing import List, Dict, Optional
 import json
 import itertools
+import functools
 
 
 class GameState(Enum):
@@ -39,6 +41,57 @@ class Color(Enum):
     AMBUSH = 99  # This just makes it easy to have a special case for ambush
 
 
+class GameError(Enum):
+    NOT_ENOUGH_PLAYERS = 0
+    TOO_MANY_PLAYERS = 1
+    GAME_ALREADY_STARTED = 2
+    PLAYER_NAME_ALREADY_USED = 3
+    INCORRECT_GAME_STATE = 4
+    PLAYER_DEAD = 5
+    INVALID_PLAYER_CHOICE = 6
+    PLAYER_ALREADY_VOTED = 7
+
+
+class VoteError(Enum):
+    VOTER_DOES_NOT_EXIST = 0
+    CANNOT_VOTE_FOR_SELF = 1
+    VOTED_FOR_DOES_NOT_EXIST = 2
+    VOTER_HAS_ALREADY_VOTED = 3
+    VOTER_IS_DEAD = 4
+    VOTED_FOR_IS_DEAD =5
+
+
+class RoundStatus(Enum):
+    EVERYONE_DEAD = 0
+    ONE_PLAYER_ALIVE = 1
+    TWO_PLAYERS_ALIVE = 2
+    MORE_THAN_TWO_PLAYERS_ALIVE = 3
+
+
+# FIXME: Convert much of below to python dataclass
+class GameMessage:
+    def __init__(self, error: GameError = None, message: str = None, data: dict = None):
+        self.error: GameError = error
+        self.message: str = message
+        self.data: dict = data
+
+    def to_json(self):
+        return dict(error=self.error, message=self.message, data=self.data)
+
+
+class VoteMessage:
+    def __init__(self, error: VoteError = None):
+        self.error: VoteError = error
+
+    def to_json(self):
+        return dict(error=self.error)
+
+
+class RoundMessage:
+    def __init__(self, error, voting_over: bool):
+        self.error = error
+        self.over = voting_over
+
 
 class Player:
     def __init__(self, name, player_id, color):
@@ -53,55 +106,78 @@ class Player:
                     name=self.name,
                     color=self.color.name)
 
+
 class Screen:
     pass
 
 
-class Round:
-    pass
-
-
-class Game:
-    def __init__(self):
-        self.players: dict[Color, Player] = {}
-        self.state = GameState.WAITING_FOR_PLAYERS
-        self.min_players = 6
-        self.max_players = 12
-        self.round = 0
-        self.votes = {}
+# A game round consists of multiple voting rounds. It ends in either a new game round with everyone back to life,
+# a showdown round or a player winning the game
+class GameRound:
+    def __init__(self, players: Dict[Color, Player]):
+        self.player_is_alive = {color: True for color, _ in players.items()}
+        self.voting_round: Optional[VotingRound] = None
 
     def start_voting_round(self):
-        if self.state is not GameState.VOTING:
-            raise Exception("Not valid voting round")
-        else:
-            self.votes = {player: [] for player in self.players}
-            self.votes[Color.AMBUSH] = []
+        self.voting_round = VotingRound([
+            color for color in self.player_is_alive.keys() if self.player_is_alive[color] is True]
+        )
 
-    def vote(self, voter_id, voted_for_id):
-        voter_id = Color(voter_id)
-        voted_for_id = Color(voted_for_id)
-        if self.state is not GameState.VOTING:
-            return {"error": "Game state should be VOTING, actually: {}".format(self.state.name)}
-        elif not self.players[voter_id].is_alive:
-            return {"error": "Player is dead"}
-        elif voter_id is voted_for_id:
-            return {"error", "Player can't vote for themselves"}
-        elif Color(voted_for_id) is not Color.AMBUSH and voted_for_id.value >= len(self.players):
-            return {"error", "Invalid player id: {}".format(voted_for_id)}
-        elif not self.players[voted_for_id].is_alive:
-            return {"error": "Voted for player: {} is already dead".format(voted_for_id)}
-        elif voter_id in (item for sublist in self.votes.values() for item in sublist):
-            return {"error": "{} has already voted".format(voter_id)}
+    # TODO: Implement Me
+    def start_showdown(self):
+        pass
+
+    def vote(self, voter: Color, voted_for: Color):
+        vote_message = self.voting_round.vote(voter, voted_for)
+        if vote_message.error:
+            # TODO: Should I return a "gameround" message?
+            return RoundMessage(error=vote_message.error)
+
+        if self.voting_round.everyone_has_voted():
+            for killed in self.voting_round.resolve_vote():
+                self.player_is_alive[killed] = False
+                return RoundMessage(voting_over=True)
         else:
-            self.votes[voted_for_id].append(voter_id)
-            return {"message": "{} voted for {}".format(voter_id, voted_for_id)}
+            return RoundMessage(voting_over=False)
+
+    def check_round_status(self):
+        num_alive = self._check_num_alive()
+        if num_alive == 0:
+            return RoundStatus.EVERYONE_DEAD
+        elif num_alive == 1:
+            return RoundStatus.ONE_PLAYER_ALIVE
+        elif num_alive == 2:
+            return RoundStatus.TWO_PLAYERS_ALIVE
+        elif num_alive > 2:
+            return RoundStatus.MORE_THAN_TWO_PLAYERS_ALIVE
+
+    def _check_num_alive(self):
+        return sum(1 for i in self.player_is_alive.values() if i)
+
+
+class VotingRound:
+    def __init__(self, colors: List[Color]):
+        self.colors = colors
+        self.has_voted: Dict[Color, bool] = {color: False for color in colors}
+        self.votes = {color: [] for color in colors}
+        self.votes[Color.AMBUSH] = []
+
+    def vote(self, voter: Color, voted_for: Color):
+        if self.votes.get(voter) is None:
+            return VoteMessage(error=VoteError.VOTER_DOES_NOT_EXIST)
+        elif self.votes.get(voted_for) is None:
+            return VoteMessage(error=VoteError.VOTED_FOR_DOES_NOT_EXIST)
+        elif voter == voted_for:
+            return VoteMessage(error=VoteError.CANNOT_VOTE_FOR_SELF)
+        elif self.has_voted[voter]:
+            return VoteMessage(error=VoteError.VOTER_HAS_ALREADY_VOTED)
+        else:
+            self.votes.get(voted_for).append(voter)
+            self.has_voted[voter] = True
+            return VoteMessage()
 
     def everyone_has_voted(self):
-        #if list(self.players.keys()).sort == list([item for sublist in self.votes.values() for item in sublist]):
-        if len(self.players.keys()) == len(list([item for sublist in self.votes.values() for item in sublist])):
-            return True
-        else:
-            return False
+        return functools.reduce(lambda a, b: a and b, self.has_voted.values())
 
     def resolve_vote(self):
         # FIXME: Below should be simplified, but my brain is mush
@@ -118,19 +194,63 @@ class Game:
         voted_for_to_die = [player for player in players_voted_for_with_plurality if player not in players_who_ambushed_with_plurality]
         players_to_die = set(voted_for_to_die + players_who_didnt_vote_for_plurality)
         # TODO: Ambush logic should go somewhere here but for now just kill all players who didn't ambush
-        for player in players_to_die:
-            game.players[player].is_alive = False
 
         return players_to_die
 
+
+class Game:
+    def __init__(self):
+        self.players: dict[Color, Player] = {}
+        self.state = GameState.WAITING_FOR_PLAYERS
+        self.min_players = 6
+        self.max_players = 12
+        self.game_round: Optional[GameRound] = None
+        self.round = 0
+
+    def join(self, name):
+        if len(self.players.keys()) == self.max_players:
+            return GameMessage(error=GameError.TOO_MANY_PLAYERS, message="Max number of players reached")
+        elif self.state is not GameState.WAITING_FOR_PLAYERS:
+            return GameMessage(error=GameError.GAME_ALREADY_STARTED, message="Game already started")
+        elif name in (x.name for x in self.players.values()):
+            return GameMessage(error=GameError.PLAYER_NAME_ALREADY_USED, message='Player name already exists')
+        else:
+            player_id = len(self.players.keys())
+            new_player = Player(name, player_id, Color(player_id))
+            self.players[new_player.color] = new_player
+            # TODO: Create Session
+            return GameMessage(data=ComplexEncoder().encode(convert_keys(new_player)), message="{} has joined".format(name))
+
+    def start(self) -> GameMessage:
+        if self.state is not GameState.WAITING_FOR_PLAYERS:
+            return GameMessage(error=GameError.GAME_ALREADY_STARTED, message="Game already started")
+        elif len(self.players.keys()) < self.min_players:
+            return GameMessage(error=GameError.NOT_ENOUGH_PLAYERS,
+                               message="Only {} players have joined. Need at least {} players".format(len(self.players),
+                                                                                            self.min_players))
+        else:
+            self.state = GameState.VOTING
+            self.start_game_round()
+            return GameMessage(data=self.to_json(), message="Game started")
+
+    def start_game_round(self):
+        if self.state is not GameState.VOTING:
+            return GameMessage(error=GameError.INCORRECT_GAME_STATE)
+        else:
+            self.game_round = GameRound(self.players)
+            return GameMessage(message="New Round started")
+
+    def vote(self, voter, voted_for):
+        voter = Color(voter)
+        voted_for = Color(voted_for)
+        return self.game_round.vote(voter, voted_for)
 
     def to_json(self):
         return dict(players=convert_keys(self.players),
                     state=self.state,
                     min_players=self.min_players,
                     max_players=self.max_players,
-                    round=self.round,
-                    votes=convert_keys(self.votes))
+                    round=self.round)
 
 
 def convert_keys(obj, convert=str):
@@ -241,7 +361,7 @@ def test_new_game():
 
     return ComplexEncoder().encode(game)
 
-@app.route('/test/voting')
+"""@app.route('/test/voting')
 def test_voting():
     test_new_game()
     start_game()
@@ -251,7 +371,7 @@ def test_voting():
     print(vote(3, 1))
     print(vote(4, 1))
     print(vote(5, 1))
-    return ComplexEncoder().encode(game)
+    return ComplexEncoder().encode(game)"""
 
 
 if __name__ == "__main__":
