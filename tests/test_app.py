@@ -53,10 +53,9 @@ class TestApp:
         assert set(test_game.game_round.player_is_alive.keys()) == set(game_with_min_players_started.players.keys())
 
 
-class TestVotingRound:
-    @pytest.fixture
-    def colors(self):
-        return [
+@pytest.fixture
+def colors():
+    return [
         Color.BLUE,
         Color.BLACK,
         Color.EMERALD,
@@ -66,6 +65,8 @@ class TestVotingRound:
         Color.YELLOW
     ]
 
+
+class TestVotingRound:
     @pytest.fixture
     def voting_round(self, colors) -> VotingRound:
         return VotingRound(colors)
@@ -110,6 +111,47 @@ class TestVotingRound:
         assert voting_round.everyone_has_voted() is True
 
 
-class GameRound:
-    pass
+class TestGameRound:
+    @pytest.fixture
+    def players(self, colors):
+        return {colors[i]: Player(name=colors[i].name, player_id=i, color=colors[i]) for i in range(len(colors))}
 
+    @pytest.fixture
+    def game_round(self, players):
+        game_round = GameRound(players)
+
+        return game_round
+
+    def test_game_round_can_start_voting_round_with_three_or_more_players_alive(self, game_round):
+        assert game_round.start_voting_round().error is None
+
+    def test_game_round_cant_start_voting_round_if_all_players_dead(self, game_round):
+        for k in game_round.player_is_alive.keys():
+            game_round.player_is_alive[k] = False
+
+        assert game_round.check_num_alive() == 0
+        assert game_round.start_voting_round().error is RoundError.INVALID_NUMBER_OF_PLAYERS_ALIVE
+
+    def test_game_round_cant_start_voting_round_if_one_player_left_alive(self, game_round):
+        one_alive = False
+        for k in game_round.player_is_alive.keys():
+            if one_alive is False:
+                one_alive = True
+                continue
+            else:
+                game_round.player_is_alive[k] = False
+
+        assert game_round.check_num_alive() == 1
+        assert game_round.start_voting_round().error is RoundError.INVALID_NUMBER_OF_PLAYERS_ALIVE
+
+    def test_game_round_cant_start_voting_round_if_two_players_left_alive(self, game_round):
+        two_alive = 0
+        for k in game_round.player_is_alive.keys():
+            if two_alive < 2:
+                two_alive += 1
+                continue
+            else:
+                game_round.player_is_alive[k] = False
+
+        assert game_round.check_num_alive() == 2
+        assert game_round.start_voting_round().error is RoundError.INVALID_NUMBER_OF_PLAYERS_ALIVE

@@ -68,6 +68,10 @@ class RoundStatus(Enum):
     MORE_THAN_TWO_PLAYERS_ALIVE = 3
 
 
+class RoundError(Enum):
+    INVALID_NUMBER_OF_PLAYERS_ALIVE = 0
+
+
 # FIXME: Convert much of below to python dataclass
 class GameMessage:
     def __init__(self, error: GameError = None, message: str = None, data: dict = None):
@@ -88,7 +92,7 @@ class VoteMessage:
 
 
 class RoundMessage:
-    def __init__(self, error, voting_over: bool):
+    def __init__(self, error=None, voting_over: bool = False):
         self.error = error
         self.over = voting_over
 
@@ -96,13 +100,11 @@ class RoundMessage:
 class Player:
     def __init__(self, name, player_id, color):
         self.id = player_id
-        self.is_alive = True
         self.name = name
         self.color: Color = color
 
     def to_json(self):
         return dict(id=self.id,
-                    is_alive=self.is_alive,
                     name=self.name,
                     color=self.color.name)
 
@@ -111,21 +113,37 @@ class Screen:
     pass
 
 
+class ShowdownRound:
+    def __init__(self, player_one: Color, player_two: Color):
+        self.player_one = player_one
+        self.player_two = player_two
+
+
+
 # A game round consists of multiple voting rounds. It ends in either a new game round with everyone back to life,
 # a showdown round or a player winning the game
 class GameRound:
     def __init__(self, players: Dict[Color, Player]):
         self.player_is_alive = {color: True for color, _ in players.items()}
         self.voting_round: Optional[VotingRound] = None
+        self.showdown_round: Optional[ShowdownRound] = None
 
     def start_voting_round(self):
-        self.voting_round = VotingRound([
-            color for color in self.player_is_alive.keys() if self.player_is_alive[color] is True]
-        )
+        if self.check_round_status() is not RoundStatus.MORE_THAN_TWO_PLAYERS_ALIVE:
+            return RoundMessage(error=RoundError.INVALID_NUMBER_OF_PLAYERS_ALIVE, voting_over=True)
+        else:
+            self.voting_round = VotingRound([
+                color for color in self.player_is_alive.keys() if self.player_is_alive[color] is True]
+            )
+            return RoundMessage(voting_over=False)
 
     # TODO: Implement Me
     def start_showdown(self):
-        pass
+        if self.check_round_status() is not RoundStatus.TWO_PLAYERS_ALIVE:
+            return RoundMessage(error=RoundError.INVALID_NUMBER_OF_PLAYERS_ALIVE)
+        else:
+            self.showdown_round = ShowdownRound()  # FIXME: Finish implementation
+            return RoundMessage()
 
     def vote(self, voter: Color, voted_for: Color):
         vote_message = self.voting_round.vote(voter, voted_for)
@@ -141,7 +159,7 @@ class GameRound:
             return RoundMessage(voting_over=False)
 
     def check_round_status(self):
-        num_alive = self._check_num_alive()
+        num_alive = self.check_num_alive()
         if num_alive == 0:
             return RoundStatus.EVERYONE_DEAD
         elif num_alive == 1:
@@ -151,7 +169,7 @@ class GameRound:
         elif num_alive > 2:
             return RoundStatus.MORE_THAN_TWO_PLAYERS_ALIVE
 
-    def _check_num_alive(self):
+    def check_num_alive(self):
         return sum(1 for i in self.player_is_alive.values() if i)
 
 
