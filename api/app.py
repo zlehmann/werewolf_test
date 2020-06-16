@@ -70,14 +70,15 @@ class RoundStatus(Enum):
 
 class RoundError(Enum):
     INVALID_NUMBER_OF_PLAYERS_ALIVE = 0
+    ROUND_NOT_STARTED = 1
 
 
 # FIXME: Convert much of below to python dataclass
 class GameMessage:
     def __init__(self, error: GameError = None, message: str = None, data: dict = None):
-        self.error: GameError = error
-        self.message: str = message
-        self.data: dict = data
+        self.error: Optional[GameError] = error
+        self.message: Optional[str] = message
+        self.data: Optional[dict] = data
 
     def to_json(self):
         return dict(error=self.error, message=self.message, data=self.data)
@@ -85,7 +86,7 @@ class GameMessage:
 
 class VoteMessage:
     def __init__(self, error: VoteError = None):
-        self.error: VoteError = error
+        self.error: Optional[VoteError] = error
 
     def to_json(self):
         return dict(error=self.error)
@@ -146,6 +147,8 @@ class GameRound:
             return RoundMessage()
 
     def vote(self, voter: Color, voted_for: Color):
+        if self.voting_round is None:
+            return RoundError.ROUND_NOT_STARTED
         vote_message = self.voting_round.vote(voter, voted_for)
         if vote_message.error:
             # TODO: Should I return a "gameround" message?
@@ -177,7 +180,7 @@ class VotingRound:
     def __init__(self, colors: List[Color]):
         self.colors = colors
         self.has_voted: Dict[Color, bool] = {color: False for color in colors}
-        self.votes = {color: [] for color in colors}
+        self.votes: Dict[Color, List[Color]] = {color: [] for color in colors}
         self.votes[Color.AMBUSH] = []
 
     def vote(self, voter: Color, voted_for: Color):
@@ -190,7 +193,10 @@ class VotingRound:
         elif self.has_voted[voter]:
             return VoteMessage(error=VoteError.VOTER_HAS_ALREADY_VOTED)
         else:
-            self.votes.get(voted_for).append(voter)
+            voted_for_list = self.votes.get(voted_for)
+            if voted_for_list is None:
+                return VoteMessage(error=VoteError.VOTED_FOR_DOES_NOT_EXIST)
+            voted_for_list.append(voter)
             self.has_voted[voter] = True
             return VoteMessage()
 
@@ -280,7 +286,7 @@ def convert_keys(obj, convert=str):
 
 
 class ComplexEncoder(JSONEncoder):
-    def default(self, obj):
+    def default(self,obj):
         if hasattr(obj, 'to_json'):
             return obj.to_json()
         elif isinstance(obj, Enum):
