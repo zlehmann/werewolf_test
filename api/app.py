@@ -40,6 +40,11 @@ class Color(Enum):
     YELLOW = 11
     AMBUSH = 99  # This just makes it easy to have a special case for ambush
 
+class ShowdownChoice(Enum):
+    SHARE = 0
+    STEAL = 1
+    TAKE_ONE_AND_GO = 2
+
 
 class GameError(Enum):
     NOT_ENOUGH_PLAYERS = 0
@@ -114,10 +119,24 @@ class Screen:
 
 
 class ShowdownRound:
-    def __init__(self, player_one: Color, player_two: Color):
+    def __init__(self, player_one: Color, player_two: Color, choices: List[ShowdownChoice]):
         self.player_one = player_one
         self.player_two = player_two
+        self.showdown_votes = {choice: [] for choice in choices}
 
+    def showdown_vote(self, voter: Color, voted_for: Color):
+        if self.votes.get(voter) is None:
+            return VoteMessage(error=VoteError.VOTER_DOES_NOT_EXIST)
+        elif self.votes.get(voted_for) is None:
+            return VoteMessage(error=VoteError.VOTED_FOR_DOES_NOT_EXIST)
+        elif voter == voted_for:
+            return VoteMessage(error=VoteError.CANNOT_VOTE_FOR_SELF)
+        elif self.has_voted[voter]:
+            return VoteMessage(error=VoteError.VOTER_HAS_ALREADY_VOTED)
+        else:
+            self.votes.get(voted_for).append(voter)
+            self.has_voted[voter] = True
+            return VoteMessage()
 
 
 # A game round consists of multiple voting rounds. It ends in either a new game round with everyone back to life,
@@ -142,7 +161,9 @@ class GameRound:
         if self.check_round_status() is not RoundStatus.TWO_PLAYERS_ALIVE:
             return RoundMessage(error=RoundError.INVALID_NUMBER_OF_PLAYERS_ALIVE)
         else:
-            self.showdown_round = ShowdownRound()  # FIXME: Finish implementation
+            self.showdown_round = ShowdownRound(
+                color for color in self.player_is_alive.keys() if self.player_is_alive[color] is True]
+            )  # FIXME: Finish implementation
             return RoundMessage()
 
     def vote(self, voter: Color, voted_for: Color):
