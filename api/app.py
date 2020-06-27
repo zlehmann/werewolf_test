@@ -2,7 +2,7 @@ import time
 from flask import Flask
 from enum import Enum
 from json import JSONEncoder
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 import json
 import itertools
 import functools
@@ -75,14 +75,15 @@ class RoundStatus(Enum):
 
 class RoundError(Enum):
     INVALID_NUMBER_OF_PLAYERS_ALIVE = 0
+    ROUND_NOT_STARTED = 1
 
 
 # FIXME: Convert much of below to python dataclass
 class GameMessage:
     def __init__(self, error: GameError = None, message: str = None, data: dict = None):
-        self.error: GameError = error
-        self.message: str = message
-        self.data: dict = data
+        self.error: Optional[GameError] = error
+        self.message: Optional[str] = message
+        self.data: Optional[dict] = data
 
     def to_json(self):
         return dict(error=self.error, message=self.message, data=self.data)
@@ -90,7 +91,7 @@ class GameMessage:
 
 class VoteMessage:
     def __init__(self, error: VoteError = None):
-        self.error: VoteError = error
+        self.error: Optional[VoteError] = error
 
     def to_json(self):
         return dict(error=self.error)
@@ -119,24 +120,42 @@ class Screen:
 
 
 class ShowdownRound:
-    def __init__(self, player_one: Color, player_two: Color, choices: List[ShowdownChoice]):
+    def __init__(self, player_one: Color, player_two: Color):
         self.player_one = player_one
         self.player_two = player_two
-        self.showdown_votes = {choice: [] for choice in choices}
+        self.p1_choice = None
+        self.p2_choice = None
 
-    def showdown_vote(self, voter: Color, voted_for: Color):
-        if self.votes.get(voter) is None:
-            return VoteMessage(error=VoteError.VOTER_DOES_NOT_EXIST)
-        elif self.votes.get(voted_for) is None:
-            return VoteMessage(error=VoteError.VOTED_FOR_DOES_NOT_EXIST)
-        elif voter == voted_for:
-            return VoteMessage(error=VoteError.CANNOT_VOTE_FOR_SELF)
-        elif self.has_voted[voter]:
-            return VoteMessage(error=VoteError.VOTER_HAS_ALREADY_VOTED)
-        else:
-            self.votes.get(voted_for).append(voter)
-            self.has_voted[voter] = True
-            return VoteMessage()
+    def showdown_vote(self, player: Color, choice: ShowdownChoice):
+        # put error handling here
+            if (self.player_one is None || self.player_two is None):
+                return VoteMessage(error=VoteError.VOTER_DOES_NOT_EXIST)
+            elif (self.p1_choice in set(i.value for i in ShowdownChoice)):
+                return VoteMessage(error=VoteError.VOTE_DOES_NOT_EXIST) # that error doesn't exist
+            else:
+                return VoteMessage() 
+
+    def resolve_showdown(self):
+        if(p1_choice.value == 0 && p2_choice.value == 0):
+            # p1 and p2 player takes 2 gold cards
+        elif(p1_choice.value == 0 && p2_choice.value == 1):
+            # p2 gets 4 gold cards
+        elif(p1_choice.value == 1 && p2_choice.value == 0):
+            # p1 gets 4 gold cards
+        elif(p1_choice.value == 0 && p2_choice.value == 2):
+            # p1 gets 3, p2 gets 1
+        elif(p1_choice.value == 2 && p2_choice.value == 0):
+            # p1 gets 1, p2 gets 3
+        elif(p1_choice.value == 1 && p2_choice.value == 1):
+            # eliminated players get 1
+        elif(p1_choice.value == 1 && p2_choice.value == 2):
+            # p1 gets 3, p2 gets 1
+        elif(p1_choice.value == 2 && p2_choice.value == 1):
+            # p1 gets 1, p2 gets 3
+        elif(p1_choice.value == 2 && p2_choice.value ==2):
+            # p1 and p2 get 1
+        return RoundMessage("Showdown over")
+
 
 
 # A game round consists of multiple voting rounds. It ends in either a new game round with everyone back to life,
@@ -147,7 +166,7 @@ class GameRound:
         self.voting_round: Optional[VotingRound] = None
         self.showdown_round: Optional[ShowdownRound] = None
 
-    def start_voting_round(self):
+    def start_voting_round(self) -> RoundMessage:
         if self.check_round_status() is not RoundStatus.MORE_THAN_TWO_PLAYERS_ALIVE:
             return RoundMessage(error=RoundError.INVALID_NUMBER_OF_PLAYERS_ALIVE, voting_over=True)
         else:
@@ -157,16 +176,17 @@ class GameRound:
             return RoundMessage(voting_over=False)
 
     # TODO: Implement Me
-    def start_showdown(self):
+    def start_showdown(self) -> RoundMessage:
         if self.check_round_status() is not RoundStatus.TWO_PLAYERS_ALIVE:
             return RoundMessage(error=RoundError.INVALID_NUMBER_OF_PLAYERS_ALIVE)
         else:
-            self.showdown_round = ShowdownRound(
-                color for color in self.player_is_alive.keys() if self.player_is_alive[color] is True]
-            )  # FIXME: Finish implementation
+            alive = list(filter(lambda x: x[1], self.player_is_alive.items()))
+            self.showdown_round = ShowdownRound(alive[0][0], alive[1][0])  # FIXME: Finish implementation
             return RoundMessage()
 
-    def vote(self, voter: Color, voted_for: Color):
+    def vote(self, voter: Color, voted_for: Color) -> RoundMessage:
+        if self.voting_round is None:
+            return RoundMessage(error=RoundError.ROUND_NOT_STARTED)
         vote_message = self.voting_round.vote(voter, voted_for)
         if vote_message.error:
             # TODO: Should I return a "gameround" message?
@@ -175,11 +195,11 @@ class GameRound:
         if self.voting_round.everyone_has_voted():
             for killed in self.voting_round.resolve_vote():
                 self.player_is_alive[killed] = False
-                return RoundMessage(voting_over=True)
+            return RoundMessage(voting_over=True)
         else:
             return RoundMessage(voting_over=False)
 
-    def check_round_status(self):
+    def check_round_status(self) -> RoundStatus:
         num_alive = self.check_num_alive()
         if num_alive == 0:
             return RoundStatus.EVERYONE_DEAD
@@ -187,7 +207,7 @@ class GameRound:
             return RoundStatus.ONE_PLAYER_ALIVE
         elif num_alive == 2:
             return RoundStatus.TWO_PLAYERS_ALIVE
-        elif num_alive > 2:
+        else:  # i.e. num_alive > 2:
             return RoundStatus.MORE_THAN_TWO_PLAYERS_ALIVE
 
     def check_num_alive(self):
@@ -198,10 +218,10 @@ class VotingRound:
     def __init__(self, colors: List[Color]):
         self.colors = colors
         self.has_voted: Dict[Color, bool] = {color: False for color in colors}
-        self.votes = {color: [] for color in colors}
+        self.votes: Dict[Color, List[Color]] = {color: [] for color in colors}
         self.votes[Color.AMBUSH] = []
 
-    def vote(self, voter: Color, voted_for: Color):
+    def vote(self, voter: Color, voted_for: Color) -> VoteMessage:
         if self.votes.get(voter) is None:
             return VoteMessage(error=VoteError.VOTER_DOES_NOT_EXIST)
         elif self.votes.get(voted_for) is None:
@@ -211,14 +231,17 @@ class VotingRound:
         elif self.has_voted[voter]:
             return VoteMessage(error=VoteError.VOTER_HAS_ALREADY_VOTED)
         else:
-            self.votes.get(voted_for).append(voter)
+            voted_for_list = self.votes.get(voted_for)
+            if voted_for_list is None:
+                return VoteMessage(error=VoteError.VOTED_FOR_DOES_NOT_EXIST)
+            voted_for_list.append(voter)
             self.has_voted[voter] = True
             return VoteMessage()
 
-    def everyone_has_voted(self):
+    def everyone_has_voted(self) -> bool:
         return functools.reduce(lambda a, b: a and b, self.has_voted.values())
 
-    def resolve_vote(self):
+    def resolve_vote(self) -> Set[Color]:
         # FIXME: Below should be simplified, but my brain is mush
         votes_by_number = {k: len(v) for k, v in self.votes.items() if k is not Color.AMBUSH}
         plurality = max(votes_by_number.values())
@@ -227,11 +250,11 @@ class VotingRound:
         for player in players_voted_for_with_plurality:
             temp.append([voter for voter in self.votes[player]])
 
-        players_who_voted_for_plurality = list(itertools.chain(*temp))
-        players_who_didnt_vote_for_plurality = list(set(self.players.keys()).difference(set(players_who_voted_for_plurality)))
-        players_who_ambushed_with_plurality = [player for player in players_voted_for_with_plurality if player in self.votes[Color.AMBUSH]]
-        voted_for_to_die = [player for player in players_voted_for_with_plurality if player not in players_who_ambushed_with_plurality]
-        players_to_die = set(voted_for_to_die + players_who_didnt_vote_for_plurality)
+        players_who_voted_for_plurality: List[Color] = list(itertools.chain(*temp))
+        players_who_didnt_vote_for_plurality: List[Color] = list(set(self.colors).difference(set(players_who_voted_for_plurality)))
+        players_who_ambushed_with_plurality: List[Color] = [player for player in players_voted_for_with_plurality if player in self.votes[Color.AMBUSH]]
+        voted_for_to_die: List[Color] = [player for player in players_voted_for_with_plurality if player not in players_who_ambushed_with_plurality]
+        players_to_die: Set[Color] = set(voted_for_to_die + players_who_didnt_vote_for_plurality)
         # TODO: Ambush logic should go somewhere here but for now just kill all players who didn't ambush
 
         return players_to_die
@@ -246,7 +269,7 @@ class Game:
         self.game_round: Optional[GameRound] = None
         self.round = 0
 
-    def join(self, name):
+    def join(self, name) -> GameMessage:
         if len(self.players.keys()) == self.max_players:
             return GameMessage(error=GameError.TOO_MANY_PLAYERS, message="Max number of players reached")
         elif self.state is not GameState.WAITING_FOR_PLAYERS:
@@ -258,7 +281,7 @@ class Game:
             new_player = Player(name, player_id, Color(player_id))
             self.players[new_player.color] = new_player
             # TODO: Create Session
-            return GameMessage(data=ComplexEncoder().encode(convert_keys(new_player)), message="{} has joined".format(name))
+            return GameMessage(data=new_player.to_json(), message="{} has joined".format(name))
 
     def start(self) -> GameMessage:
         if self.state is not GameState.WAITING_FOR_PLAYERS:
@@ -272,19 +295,21 @@ class Game:
             self.start_game_round()
             return GameMessage(data=self.to_json(), message="Game started")
 
-    def start_game_round(self):
+    def start_game_round(self) -> GameMessage:
         if self.state is not GameState.VOTING:
             return GameMessage(error=GameError.INCORRECT_GAME_STATE)
         else:
             self.game_round = GameRound(self.players)
             return GameMessage(message="New Round started")
 
-    def vote(self, voter, voted_for):
+    def vote(self, voter, voted_for) -> RoundMessage:
         voter = Color(voter)
         voted_for = Color(voted_for)
+        if self.game_round is None:
+            return RoundMessage(error=RoundError.ROUND_NOT_STARTED)
         return self.game_round.vote(voter, voted_for)
 
-    def to_json(self):
+    def to_json(self) -> Dict:
         return dict(players=convert_keys(self.players),
                     state=self.state,
                     min_players=self.min_players,
@@ -301,7 +326,7 @@ def convert_keys(obj, convert=str):
 
 
 class ComplexEncoder(JSONEncoder):
-    def default(self, obj):
+    def default(self,obj):
         if hasattr(obj, 'to_json'):
             return obj.to_json()
         elif isinstance(obj, Enum):
