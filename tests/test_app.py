@@ -155,3 +155,16 @@ class TestGameRound:
 
         assert game_round.check_num_alive() == 2
         assert game_round.start_voting_round().error is RoundError.INVALID_NUMBER_OF_PLAYERS_ALIVE
+
+class TestShowdown:
+    @pytest.fixture
+    def players(self, colors):
+        return {colors[i]: Player(name=colors[i].name, player_id=i, color=colors[i]) for i in range(len(colors))}
+
+    @pytest.fixture
+    def showdown_round(self, players):
+        showdown_round = ShowdownRound(players[0], players[1])
+        return showdown_round
+
+    def test_showdown_vote(self, showdown_round):
+        assert showdown_round.showdown_vote(players[0], ShowdownChoice.SHARE).error is None

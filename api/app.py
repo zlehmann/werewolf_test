@@ -45,6 +45,16 @@ class ShowdownChoice(Enum):
     STEAL = 1
     TAKE_ONE_AND_GO = 2
 
+class ShowdownResult(Enum):
+    SHARE_SHARE = 0
+    SHARE_STEAL = 1
+    STEAL_SHARE = 2
+    SHARE_TAKE = 3
+    TAKE_SHARE = 4
+    STEAL_STEAL = 5
+    STEAL_TAKE = 6
+    TAKE_STEAL = 7
+    TAKE_TAKE = 8
 
 class GameError(Enum):
     NOT_ENOUGH_PLAYERS = 0
@@ -128,32 +138,32 @@ class ShowdownRound:
 
     def showdown_vote(self, player: Color, choice: ShowdownChoice):
         # put error handling here
-            if (self.player_one is None || self.player_two is None):
+            if not self.player_one and sel.player_two:
                 return VoteMessage(error=VoteError.VOTER_DOES_NOT_EXIST)
-            elif (self.p1_choice in set(i.value for i in ShowdownChoice)):
+            elif self.p1_choice in set(i.value for i in ShowdownChoice):
                 return VoteMessage(error=VoteError.VOTE_DOES_NOT_EXIST) # that error doesn't exist
             else:
-                return VoteMessage() 
+                return VoteMessage()
 
     def resolve_showdown(self):
-        if(p1_choice.value == 0 && p2_choice.value == 0):
-            # p1 and p2 player takes 2 gold cards
-        elif(p1_choice.value == 0 && p2_choice.value == 1):
-            # p2 gets 4 gold cards
-        elif(p1_choice.value == 1 && p2_choice.value == 0):
-            # p1 gets 4 gold cards
-        elif(p1_choice.value == 0 && p2_choice.value == 2):
-            # p1 gets 3, p2 gets 1
-        elif(p1_choice.value == 2 && p2_choice.value == 0):
-            # p1 gets 1, p2 gets 3
-        elif(p1_choice.value == 1 && p2_choice.value == 1):
-            # eliminated players get 1
-        elif(p1_choice.value == 1 && p2_choice.value == 2):
-            # p1 gets 3, p2 gets 1
-        elif(p1_choice.value == 2 && p2_choice.value == 1):
-            # p1 gets 1, p2 gets 3
-        elif(p1_choice.value == 2 && p2_choice.value ==2):
-            # p1 and p2 get 1
+        if(p1_choice.value == 0 and p2_choice.value == 0):
+            return RoundMessage("p1 and p2 player takes 2 gold cards")
+        elif(p1_choice.value == 0 and p2_choice.value == 1):
+            return RoundMessage("p2 gets 4 gold cards")
+        elif(p1_choice.value == 1 and p2_choice.value == 0):
+            return RoundMessage("p1 gets 4 gold cards")
+        elif(p1_choice.value == 0 and p2_choice.value == 2):
+            return RoundMessage("p1 gets 3, p2 gets 1")
+        elif(p1_choice.value == 2 and p2_choice.value == 0):
+            return RoundMessage("p1 gets 1, p2 gets 3")
+        elif(p1_choice.value == 1 and p2_choice.value == 1):
+            return RoundMessage("eliminated players get 1")
+        elif(p1_choice.value == 1 and p2_choice.value == 2):
+            return RoundMessage("p1 gets 3, p2 gets 1")
+        elif(p1_choice.value == 2 and p2_choice.value == 1):
+            return RoundMessage("p1 gets 1, p2 gets 3")
+        elif(p1_choice.value == 2 and p2_choice.value ==2):
+            return RoundMessage("p1 and p2 get 1")
         return RoundMessage("Showdown over")
 
 
